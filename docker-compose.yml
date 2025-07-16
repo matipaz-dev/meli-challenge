@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - .:/app # Montamos todo el código fuente para hot-reload
+      - /app/node_modules # Volume anónimo para node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - LOG_LEVEL=debug
+      - LOG_FILE_PATH=/app/logs/app.log
+      - ERROR_LOG_FILE_PATH=/app/logs/error.log
+      - COMBINED_LOG_FILE_PATH=/app/logs/combined.log
+      - ITEMS_JSON_PATH=/app/data/items.json
+    command: >
+      sh -c "npm run init:data && npm run start:dev"
+    restart: unless-stopped
+    user: "node" 
