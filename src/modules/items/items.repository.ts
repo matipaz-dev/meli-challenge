@@ -31,19 +31,7 @@ export class ItemsRepository {
       }
       return item;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       this.logger.error(`Error finding item with ID ${id}: ${error.message}`);
-      throw error;
-    }
-  }
-
-  async findAll(): Promise<ItemDto[]> {
-    try {
-      return await this.getItems();
-    } catch (error) {
-      this.logger.error(`Error finding all items: ${error.message}`);
       throw error;
     }
   }
@@ -67,33 +55,10 @@ export class ItemsRepository {
     }
   }
 
-  async saveMany(newItems: ItemDto[]): Promise<void> {
-    try {
-      const items = await this.getItems();
-      
-      for (const item of newItems) {
-        const existingIndex = items.findIndex(i => i.id === item.id);
-        if (existingIndex >= 0) {
-          items[existingIndex] = item;
-        } else {
-          items.push(item);
-        }
-      }
-
-      await this.jsonStorage.writeJson(this.ITEMS_FILE, items);
-      this.logger.debug(`Saved ${newItems.length} items`);
-    } catch (error) {
-      this.logger.error(`Error saving multiple items: ${error.message}`);
-      throw error;
-    }
-  }
-
   async findBySellerId(sellerId: number): Promise<ItemDto[]> {
     try {
       const items = await this.getItems();
-      const sellerItems = items.filter(item => item.seller.id === sellerId);
-      this.logger.debug(`Found ${sellerItems.length} items for seller ${sellerId}`);
-      return sellerItems;
+      return items.filter(item => item.seller.id === sellerId);
     } catch (error) {
       this.logger.error(`Error finding items for seller ${sellerId}: ${error.message}`);
       throw error;

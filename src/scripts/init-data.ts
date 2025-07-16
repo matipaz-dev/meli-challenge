@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { JsonStorageService } from '../shared/services/json-storage.service';
 import { LoggerService } from '../shared/services/logger.service';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 const sampleItems = [
   {
@@ -112,20 +114,96 @@ const sampleItems = [
   }
 ];
 
+async function ensureDirectoryExists(dirPath: string) {
+  try {
+    await fs.access(dirPath);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      await fs.mkdir(dirPath, { recursive: true });
+    } else {
+      throw error;
+    }
+  }
+}
+
+async function readJsonFile(filePath: string) {
+  try {
+    const content = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(content);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function writeJsonFile(filePath: string, data: any) {
+  const jsonContent = JSON.stringify(data, null, 2);
+  await fs.writeFile(filePath, jsonContent, 'utf8');
+}
+
+async function initializeData() {
+  try {
+    // Usar path.join para manejar rutas en cualquier SO
+    const dataDir = path.join(process.cwd(), 'data');
+    const itemsFile = path.join(dataDir, 'items.json');
+
+    // Asegurar que existe el directorio
+    await ensureDirectoryExists(dataDir);
+
+    // Leer el archivo si existe
+    const existingData = await readJsonFile(itemsFile);
+
+    // Verificar si necesitamos inicializar los datos
+    if (!existingData || !Array.isArray(existingData) || existingData.length === 0) {
+      console.log('Inicializando datos de ejemplo...');
+      await writeJsonFile(itemsFile, sampleItems);
+      console.log(`Se han inicializado ${sampleItems.length} items de ejemplo`);
+    } else {
+      console.log(`El archivo ya existe y contiene ${existingData.length} items`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error al inicializar los datos:', error);
+    return false;
+  }
+}
+
+// Solo crear la aplicación NestJS si se necesita el JsonStorageService
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Primero intentar inicializar directamente
+  const success = await initializeData();
+  if (success) {
+    return;
+  }
+
+  // Si falla, intentar con el JsonStorageService
+  console.log('Intentando inicializar usando JsonStorageService...');
+  const app = await NestFactory.create(AppModule, {
+    logger: false // Desactivar logs innecesarios
+  });
+  
   const jsonStorage = app.get(JsonStorageService);
   const logger = app.get(LoggerService);
 
   try {
-    logger.log('Initializing data files...');
     await jsonStorage.initializeJsonIfNotExists('items', sampleItems);
-    logger.log('Data initialization completed successfully');
+    logger.log('Datos inicializados correctamente usando JsonStorageService');
   } catch (error) {
-    logger.error(`Error initializing data: ${error.message}`);
+    logger.error(`Error al inicializar datos: ${error.message}`);
+    process.exit(1);
   } finally {
     await app.close();
   }
 }
 
+// Manejar errores no capturados
+process.on('unhandledRejection', (error: Error) => {
+  console.error('Error no manejado:', error);
+  process.exit(1);
+});
+
+// Ejecutar el script
 bootstrap(); 

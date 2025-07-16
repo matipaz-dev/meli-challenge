@@ -24,7 +24,6 @@ API REST que proporciona los endpoints necesarios para soportar una página de d
 - [Estructura del Proyecto](#-estructura-del-proyecto)
 - [Arquitectura](#-arquitectura)
 - [Datos de Ejemplo](#-datos-de-ejemplo)
-- [Contribución](#-contribución)
 - [Licencia](#-licencia)
 
 ## ✨ Características
@@ -69,17 +68,17 @@ git clone https://github.com/matipaz-dev/meli-challenge.git
 cd meli-challenge
 ```
 
-2. Instalar dependencias y configurar el proyecto:
+2. Instalar dependencias:
 ```bash
 npm install
-npm run setup
 ```
 
-El script de setup creará automáticamente:
-- Los directorios necesarios (logs, data, temp)
-- Un archivo `.env` basado en `.env.example`
+La aplicación creará automáticamente los directorios necesarios (logs, data) al iniciar.
 
 ## ⚙️ Configuración
+
+Para ejecutar la aplicación necesitarás:
+- Un archivo `.env` basado en `.env.example`
 
 ### Variables de Entorno
 
@@ -88,14 +87,8 @@ El script de setup creará automáticamente:
 | PORT | Puerto del servidor | 3000 |
 | NODE_ENV | Entorno de ejecución | development |
 | LOG_LEVEL | Nivel de logging | debug |
-| LOG_FILE_PATH | Archivo de logs principal | logs/app.log |
-| ERROR_LOG_FILE_PATH | Archivo de logs de error | logs/error.log |
-| COMBINED_LOG_FILE_PATH | Archivo de logs combinados | logs/combined.log |
-| ITEMS_JSON_PATH | Ruta del archivo de items | data/items.json |
-| API_PREFIX | Prefijo para los endpoints de la API | api |
-| SWAGGER_PATH | Ruta de la documentación Swagger | docs |
-| THROTTLE_TTL | Tiempo de vida para rate limiting (segundos) | 60 |
-| THROTTLE_LIMIT | Límite de peticiones por ventana de tiempo | 100 |
+| LOG_FILE | Archivo de logs | logs/app.log |
+| DATA_PATH | Ruta de almacenamiento de datos | data/ |
 
 ## 🎮 Uso
 
@@ -118,6 +111,11 @@ npm run build
 # Ejecutar en producción
 npm run start:prod
 ```
+
+La aplicación automáticamente:
+1. Creará los directorios necesarios (logs, data)
+2. Inicializará los datos de ejemplo
+3. Iniciará el servidor
 
 ### Docker
 
@@ -144,31 +142,28 @@ El entorno Docker está configurado para desarrollo por defecto, incluyendo:
 - Todas las dependencias de desarrollo
 - Logs en modo debug
 - Montaje del código fuente local
-- Inicialización automática de datos de ejemplo
 
 Para producción, usar el target 'production' en el build que:
 - Incluye solo dependencias de producción
 - Optimiza el tamaño de la imagen
 - Usa configuración de producción
-- Inicializa datos de ejemplo si no existen
 
 ## 🔌 API Endpoints
 
 ### Items
-
-#### GET /api/items
-- **Descripción**: Obtiene lista de items
-- **Query Params**:
-  - `limit` (opcional): Límite de resultados
-  - `offset` (opcional): Desplazamiento
-- **Respuesta**: Array de items
-- **Códigos**: 200, 400
 
 #### GET /api/items/:id
 - **Descripción**: Obtiene un item específico
 - **Params**: 
   - `id`: ID del item (ej: MLA1234567)
 - **Respuesta**: Detalles del item
+- **Códigos**: 200, 404
+
+#### GET /api/items/seller/:sellerId
+- **Descripción**: Obtiene items de un vendedor específico
+- **Params**: 
+  - `sellerId`: ID del vendedor (número positivo)
+- **Respuesta**: Lista de items del vendedor
 - **Códigos**: 200, 404
 
 #### POST /api/items
@@ -213,10 +208,11 @@ src/
 ├── scripts/             # Scripts de utilidad
 │   └── init-data.ts    # Inicialización de datos
 └── main.ts              # Punto de entrada
+```
 
 ## 📦 Datos de Ejemplo
 
-Al iniciar la aplicación por primera vez, se crearán automáticamente datos de ejemplo en el archivo `data/items.json`. Estos datos incluyen:
+La aplicación utiliza un archivo `data/items.json` para almacenar los datos. Al iniciar por primera vez, si el archivo no existe, se crearán automáticamente datos de ejemplo que incluyen:
 
 ### Productos Disponibles
 
@@ -257,7 +253,7 @@ Al iniciar la aplicación por primera vez, se crearán automáticamente datos de
 
 Los datos se inicializan solo si el archivo no existe, permitiendo mantener los datos una vez creados.
 
-## ��️ Arquitectura
+## 📄 Arquitectura
 
 ### Visión General
 
@@ -473,14 +469,6 @@ export class MetricsService {
    - Microservicios
    - Event sourcing
    - Escalamiento horizontal
-
-## 👥 Contribución
-
-1. Fork el proyecto
-2. Crea una rama (`git checkout -b feature/amazing-feature`)
-3. Commit tus cambios (`git commit -m 'feat: add amazing feature'`)
-4. Push a la rama (`git push origin feature/amazing-feature`)
-5. Abre un Pull Request
 
 ## 📄 Licencia
 

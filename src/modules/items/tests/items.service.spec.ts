@@ -37,7 +37,6 @@ describe('ItemsService', () => {
 
   const mockRepository = {
     findById: jest.fn(),
-    findAll: jest.fn(),
     save: jest.fn(),
     findBySellerId: jest.fn(),
   };
@@ -94,37 +93,6 @@ describe('ItemsService', () => {
       mockRepository.findById.mockRejectedValue(error);
 
       await expect(service.findById('123')).rejects.toThrow(error);
-      expect(logger.error).toHaveBeenCalled();
-    });
-  });
-
-  describe('findAll', () => {
-    it('should return all items', async () => {
-      const items = [mockItem];
-      mockRepository.findAll.mockResolvedValue(items);
-
-      const result = await service.findAll();
-
-      expect(result).toEqual({ items });
-      expect(repository.findAll).toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalled();
-    });
-
-    it('should return empty array when no items exist', async () => {
-      mockRepository.findAll.mockResolvedValue([]);
-
-      const result = await service.findAll();
-
-      expect(result).toEqual({ items: [] });
-      expect(repository.findAll).toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalled();
-    });
-
-    it('should handle and rethrow errors', async () => {
-      const error = new Error('Database connection failed');
-      mockRepository.findAll.mockRejectedValue(error);
-
-      await expect(service.findAll()).rejects.toThrow(error);
       expect(logger.error).toHaveBeenCalled();
     });
   });

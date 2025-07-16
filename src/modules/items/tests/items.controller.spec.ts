@@ -33,8 +33,8 @@ describe('ItemsController', () => {
 
   const mockService = {
     findById: jest.fn(),
-    findAll: jest.fn(),
     create: jest.fn(),
+    findBySellerId: jest.fn(),
   };
 
   const mockLogger = {
@@ -87,23 +87,23 @@ describe('ItemsController', () => {
     });
   });
 
-  describe('getAllItems', () => {
-    it('should return all items', async () => {
+  describe('getItemsBySeller', () => {
+    it('should return items by seller', async () => {
       const items = [mockItem];
-      mockService.findAll.mockResolvedValue({ items });
+      mockService.findBySellerId.mockResolvedValue({ items });
 
-      const result = await controller.getAllItems();
+      const result = await controller.getItemsBySeller(1);
 
       expect(result).toEqual({ items });
-      expect(service.findAll).toHaveBeenCalled();
+      expect(service.findBySellerId).toHaveBeenCalledWith(1);
       expect(logger.debug).toHaveBeenCalled();
     });
 
     it('should handle service errors', async () => {
       const error = new Error('Service error');
-      mockService.findAll.mockRejectedValue(error);
+      mockService.findBySellerId.mockRejectedValue(error);
 
-      await expect(controller.getAllItems()).rejects.toThrow(error);
+      await expect(controller.getItemsBySeller(1)).rejects.toThrow(error);
       expect(logger.debug).toHaveBeenCalled();
     });
   });

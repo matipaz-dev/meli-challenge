@@ -15,10 +15,8 @@ services:
       - NODE_ENV=development
       - PORT=3000
       - LOG_LEVEL=debug
-      - LOG_FILE_PATH=/app/logs/app.log
-      - ERROR_LOG_FILE_PATH=/app/logs/error.log
-      - COMBINED_LOG_FILE_PATH=/app/logs/combined.log
-      - ITEMS_JSON_PATH=/app/data/items.json
+      - LOG_FILE=/app/logs/app.log
+      - DATA_PATH=/app/data
     command: >
       sh -c "npm run init:data && npm run start:dev"
     restart: unless-stopped

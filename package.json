@@ -6,21 +6,21 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "setup": "mkdir -p logs data temp && cp -n .env.example .env || true",
+    "setup": "mkdir logs 2>nul & mkdir data 2>nul",
     "init:data": "ts-node src/scripts/init-data.ts",
     "prebuild": "rimraf dist",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "npm run init:data && nest start",
-    "start:dev": "npm run init:data && nest start --watch",
-    "start:debug": "npm run init:data && nest start --debug --watch",
-    "start:prod": "npm run init:data && node dist/main",
+    "start": "npm run setup && npm run init:data && nest start",
+    "start:dev": "npm run setup && npm run init:data && nest start --watch",
+    "start:debug": "npm run setup && npm run init:data && nest start --debug --watch",
+    "start:prod": "npm run setup && npm run init:data && node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.config.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.19",

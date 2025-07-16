@@ -95,49 +95,6 @@ Example invalid IDs:
     return this.itemsService.findById(id);
   }
 
-  @Get()
-  @ApiOperation({
-    summary: 'Get all items',
-    description: 'Retrieves a list of all available items. Results can be paginated using limit and offset parameters.'
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    description: 'Maximum number of items to return (1-50)',
-    type: Number,
-    example: 10
-  })
-  @ApiQuery({
-    name: 'offset',
-    required: false,
-    description: 'Number of items to skip (0 or more)',
-    type: Number,
-    example: 0
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'List of items retrieved successfully',
-    type: ItemsResponseDto
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid query parameters',
-    schema: {
-      example: {
-        statusCode: 400,
-        message: ['limit must be between 1 and 50', 'offset must be a positive number'],
-        error: 'Bad Request'
-      }
-    }
-  })
-  async getAllItems(
-    @Query('limit') limit?: number,
-    @Query('offset') offset?: number
-  ): Promise<ItemsResponseDto> {
-    this.logger.debug('Received request to get all items');
-    return this.itemsService.findAll();
-  }
-
   @Get('seller/:sellerId')
   @ApiOperation({
     summary: 'Get items by seller ID',
@@ -323,59 +280,5 @@ Example invalid seller IDs:
   async createItem(@Body() createItemDto: CreateItemDto): Promise<ItemResponseDto> {
     this.logger.debug('Received request to create new item');
     return this.itemsService.create(createItemDto);
-  }
-
-  @Post('batch')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Create multiple items',
-    description: 'Creates multiple items in a single operation. All items must be valid.'
-  })
-  @ApiBody({
-    type: [CreateItemDto],
-    description: 'Array of items to create'
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Items created successfully',
-    schema: {
-      example: {
-        items: [
-          {
-            id: 'MLA0000001',
-            title: 'iPhone 12 Pro Max 256GB',
-            price: {
-              amount: 999.99,
-              currency: 'USD'
-            },
-            pictures: ['https://example.com/iphone12-1.jpg'],
-            condition: 'new',
-            free_shipping: true,
-            available_quantity: 10,
-            seller: {
-              id: 1,
-              name: 'Apple Store Official',
-              rating: 4.8
-            }
-          }
-        ]
-      }
-    }
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid input data',
-    schema: {
-      example: {
-        statusCode: 400,
-        message: ['One or more items have invalid data'],
-        error: 'Bad Request'
-      }
-    }
-  })
-  async createMany(@Body() createItemDtos: CreateItemDto[]): Promise<{ items: ItemDto[] }> {
-    this.logger.debug(`Received request to create ${createItemDtos.length} items`);
-    const responses = await this.itemsService.createMany(createItemDtos);
-    return { items: responses.map(response => response.item) };
   }
 } 

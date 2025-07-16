@@ -11,16 +11,23 @@ const globalMutex = new Mutex();
 @Injectable()
 export class JsonStorageService {
   private readonly dataPath: string;
+  private readonly itemsPath: string;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly logger: LoggerService,
   ) {
     this.dataPath = this.configService.get<string>('data.path');
+    this.itemsPath = this.configService.get<string>('data.itemsPath');
   }
 
   private async ensureDataDirectory() {
     try {
+      // Asegurar que existe el directorio para el archivo de items
+      const itemsDir = path.dirname(this.itemsPath);
+      await fs.mkdir(itemsDir, { recursive: true });
+      
+      // Asegurar que existe el directorio de datos general
       await fs.mkdir(this.dataPath, { recursive: true });
     } catch (error) {
       this.logger.error(`Error creating data directory: ${error.message}`);
@@ -29,7 +36,12 @@ export class JsonStorageService {
   }
 
   private getFilePath(filename: string): string {
-    return path.join(this.dataPath.replace(/\/$/, ''), `${filename}.json`);
+    // Si es el archivo de items, usar la ruta específica
+    if (filename === 'items') {
+      return this.itemsPath;
+    }
+    // Para otros archivos, usar el directorio de datos general
+    return path.join(this.dataPath, `${filename}.json`);
   }
 
   async initializeJsonIfNotExists<T>(filename: string, defaultData: T): Promise<void> {

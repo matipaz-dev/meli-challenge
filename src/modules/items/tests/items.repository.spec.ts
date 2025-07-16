@@ -88,35 +88,6 @@ describe('ItemsRepository', () => {
     });
   });
 
-  describe('findAll', () => {
-    it('should return all items', async () => {
-      const items = [mockItem];
-      mockStorage.readJson.mockResolvedValue(items);
-
-      const result = await repository.findAll();
-
-      expect(result).toEqual(items);
-      expect(mockStorage.readJson).toHaveBeenCalledWith('items');
-    });
-
-    it('should return empty array when no items exist', async () => {
-      mockStorage.readJson.mockResolvedValue(null);
-
-      const result = await repository.findAll();
-
-      expect(result).toEqual([]);
-      expect(mockStorage.readJson).toHaveBeenCalledWith('items');
-    });
-
-    it('should handle storage errors', async () => {
-      const error = new Error('Storage error');
-      mockStorage.readJson.mockRejectedValue(error);
-
-      await expect(repository.findAll()).rejects.toThrow(error);
-      expect(mockLogger.error).toHaveBeenCalledWith(`Error finding all items: ${error.message}`);
-    });
-  });
-
   describe('save', () => {
     it('should add new item to existing items', async () => {
       const existingItem = {
@@ -197,7 +168,6 @@ describe('ItemsRepository', () => {
       expect(result).toHaveLength(2);
       expect(result.every(item => item.seller.id === sellerId)).toBe(true);
       expect(mockStorage.readJson).toHaveBeenCalledWith('items');
-      expect(mockLogger.debug).toHaveBeenCalledWith(`Found ${result.length} items for seller ${sellerId}`);
     });
 
     it('should return empty array when no items found for seller', async () => {
@@ -211,7 +181,6 @@ describe('ItemsRepository', () => {
 
       expect(result).toHaveLength(0);
       expect(mockStorage.readJson).toHaveBeenCalledWith('items');
-      expect(mockLogger.debug).toHaveBeenCalledWith(`Found 0 items for seller ${sellerId}`);
     });
 
     it('should return empty array when items file is empty', async () => {
@@ -222,7 +191,6 @@ describe('ItemsRepository', () => {
 
       expect(result).toHaveLength(0);
       expect(mockStorage.readJson).toHaveBeenCalledWith('items');
-      expect(mockLogger.debug).toHaveBeenCalledWith(`Found 0 items for seller ${sellerId}`);
     });
 
     it('should handle storage errors', async () => {

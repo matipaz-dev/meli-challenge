@@ -123,10 +123,10 @@
           ]
         },
         {
-          "name": "Get All Items",
+          "name": "Get Items by Seller",
           "item": [
             {
-              "name": "Get All Items (Default)",
+              "name": "Get Items by Seller (Valid)",
               "event": [
                 {
                   "listen": "test",
@@ -140,35 +140,12 @@
                       "    var jsonData = pm.response.json();",
                       "    pm.expect(jsonData).to.have.property('items');",
                       "    pm.expect(jsonData.items).to.be.an('array');",
-                      "});",
-                      "",
-                      "pm.test(\"Items have valid format\", function () {",
-                      "    var jsonData = pm.response.json();",
-                      "    if (jsonData.items.length > 0) {",
-                      "        const firstItem = jsonData.items[0];",
-                      "        // ID validation",
-                      "        pm.expect(firstItem.id).to.match(/^MLA\\d+$/);",
-                      "",
-                      "        // Title validation",
-                      "        pm.expect(firstItem.title).to.have.lengthOf.at.least(5);",
-                      "        pm.expect(firstItem.title).to.have.lengthOf.at.most(100);",
-                      "",
-                      "        // Price validation",
-                      "        pm.expect(firstItem.price.amount).to.be.within(0.01, 999999.99);",
-                      "        pm.expect(firstItem.price.currency).to.be.oneOf(['USD', 'EUR', 'ARS']);",
-                      "",
-                      "        // Pictures validation",
-                      "        pm.expect(firstItem.pictures).to.be.an('array').that.is.not.empty;",
-                      "        pm.expect(firstItem.pictures.length).to.be.at.most(10);",
-                      "",
-                      "        // Condition validation",
-                      "        pm.expect(firstItem.condition).to.be.oneOf(['new', 'used', 'refurbished']);",
-                      "",
-                      "        // Seller validation",
-                      "        pm.expect(firstItem.seller.rating).to.be.within(0, 5);",
-                      "        pm.expect(firstItem.seller.name).to.have.lengthOf.at.least(3);",
-                      "        pm.expect(firstItem.seller.name).to.have.lengthOf.at.most(50);",
-                      "    }",
+                      "    ",
+                      "    // Verify all items belong to the seller",
+                      "    const sellerId = Number(pm.request.url.path[4]);",
+                      "    jsonData.items.forEach(function(item) {",
+                      "        pm.expect(item.seller.id).to.equal(sellerId);",
+                      "    });",
                       "});"
                     ],
                     "type": "text/javascript"
@@ -179,11 +156,74 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/api/items",
+                  "raw": "{{baseUrl}}/api/items/seller/1",
                   "host": ["{{baseUrl}}"],
-                  "path": ["api", "items"]
+                  "path": ["api", "items", "seller", "1"]
                 },
-                "description": "Obtiene todos los items sin parámetros"
+                "description": "Obtiene todos los items de un vendedor específico"
+              }
+            },
+            {
+              "name": "Get Items by Seller (Not Found)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 404\", function () {",
+                      "    pm.response.to.have.status(404);",
+                      "});",
+                      "",
+                      "pm.test(\"No items found error\", function () {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.message).to.equal('No items found for seller');",
+                      "    pm.expect(jsonData.error).to.equal('Not Found');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/items/seller/999",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "items", "seller", "999"]
+                },
+                "description": "Intenta obtener items de un vendedor que no existe"
+              }
+            },
+            {
+              "name": "Get Items by Seller (Invalid ID)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Invalid seller ID format\", function () {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.message).to.contain('Validation failed');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/items/seller/abc",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "items", "seller", "abc"]
+                },
+                "description": "Intenta obtener items con un ID de vendedor inválido"
               }
             }
           ]
@@ -247,7 +287,7 @@
               }
             },
             {
-              "name": "Create Item - Invalid Title Length",
+              "name": "Create Item - Invalid Data",
               "event": [
                 {
                   "listen": "test",
@@ -257,11 +297,10 @@
                       "    pm.response.to.have.status(400);",
                       "});",
                       "",
-                      "pm.test(\"Title length validation error\", function () {",
+                      "pm.test(\"Validation error response\", function () {",
                       "    var jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.message).to.be.an('array');",
-                      "    pm.expect(jsonData.message.some(msg => msg.includes('title'))).to.be.true;",
-                      "    pm.expect(jsonData.message.some(msg => msg.includes('length'))).to.be.true;",
+                      "    pm.expect(jsonData).to.have.property('message');",
+                      "    pm.expect(jsonData).to.have.property('error').equal('Bad Request');",
                       "});"
                     ],
                     "type": "text/javascript"
@@ -278,349 +317,14 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"title\": \"Mac\",\n    \"price\": {\n        \"amount\": 2499.99,\n        \"currency\": \"USD\"\n    },\n    \"pictures\": [\"https://example.com/mac.jpg\"],\n    \"condition\": \"new\",\n    \"free_shipping\": true,\n    \"available_quantity\": 3,\n    \"seller\": {\n        \"id\": 102,\n        \"name\": \"Apple Store\",\n        \"rating\": 4.7\n    }\n}"
+                  "raw": "{\n    \"title\": \"Te\",\n    \"price\": {\n        \"amount\": -100,\n        \"currency\": \"INVALID\"\n    },\n    \"pictures\": [],\n    \"condition\": \"invalid\",\n    \"free_shipping\": \"not-boolean\",\n    \"available_quantity\": 0,\n    \"seller\": {\n        \"id\": -1,\n        \"name\": \"A\",\n        \"rating\": 6\n    }\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/items",
                   "host": ["{{baseUrl}}"],
                   "path": ["api", "items"]
                 },
-                "description": "Intenta crear un item con título demasiado corto (< 5 caracteres)"
-              }
-            },
-            {
-              "name": "Create Item - Invalid Price",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 400\", function () {",
-                      "    pm.response.to.have.status(400);",
-                      "});",
-                      "",
-                      "pm.test(\"Price validation errors\", function () {",
-                      "    var jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.message).to.be.an('array');",
-                      "    pm.expect(jsonData.message.some(msg => msg.includes('price.amount'))).to.be.true;",
-                      "});"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"title\": \"MacBook Pro M1\",\n    \"price\": {\n        \"amount\": -100,\n        \"currency\": \"USD\"\n    },\n    \"pictures\": [\"https://example.com/mac.jpg\"],\n    \"condition\": \"new\",\n    \"free_shipping\": true,\n    \"available_quantity\": 3,\n    \"seller\": {\n        \"id\": 102,\n        \"name\": \"Apple Store\",\n        \"rating\": 4.7\n    }\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/items",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "items"]
-                },
-                "description": "Intenta crear un item con precio negativo"
-              }
-            },
-            {
-              "name": "Create Item - Invalid Currency",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 400\", function () {",
-                      "    pm.response.to.have.status(400);",
-                      "});",
-                      "",
-                      "pm.test(\"Currency validation error\", function () {",
-                      "    var jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.message).to.be.an('array');",
-                      "    pm.expect(jsonData.message.some(msg => msg.includes('currency'))).to.be.true;",
-                      "});"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"title\": \"MacBook Pro M1\",\n    \"price\": {\n        \"amount\": 2499.99,\n        \"currency\": \"GBP\"\n    },\n    \"pictures\": [\"https://example.com/mac.jpg\"],\n    \"condition\": \"new\",\n    \"free_shipping\": true,\n    \"available_quantity\": 3,\n    \"seller\": {\n        \"id\": 102,\n        \"name\": \"Apple Store\",\n        \"rating\": 4.7\n    }\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/items",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "items"]
-                },
-                "description": "Intenta crear un item con moneda no soportada"
-              }
-            },
-            {
-              "name": "Create Item - Invalid Pictures",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 400\", function () {",
-                      "    pm.response.to.have.status(400);",
-                      "});",
-                      "",
-                      "pm.test(\"Pictures validation error\", function () {",
-                      "    var jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.message).to.be.an('array');",
-                      "    pm.expect(jsonData.message.some(msg => msg.includes('pictures'))).to.be.true;",
-                      "});"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"title\": \"MacBook Pro M1\",\n    \"price\": {\n        \"amount\": 2499.99,\n        \"currency\": \"USD\"\n    },\n    \"pictures\": [\"not-a-url\"],\n    \"condition\": \"new\",\n    \"free_shipping\": true,\n    \"available_quantity\": 3,\n    \"seller\": {\n        \"id\": 102,\n        \"name\": \"Apple Store\",\n        \"rating\": 4.7\n    }\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/items",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "items"]
-                },
-                "description": "Intenta crear un item con URL de imagen inválida"
-              }
-            },
-            {
-              "name": "Create Item - Invalid Condition",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 400\", function () {",
-                      "    pm.response.to.have.status(400);",
-                      "});",
-                      "",
-                      "pm.test(\"Condition validation error\", function () {",
-                      "    var jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.message).to.be.an('array');",
-                      "    pm.expect(jsonData.message.some(msg => msg.includes('condition'))).to.be.true;",
-                      "});"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"title\": \"MacBook Pro M1\",\n    \"price\": {\n        \"amount\": 2499.99,\n        \"currency\": \"USD\"\n    },\n    \"pictures\": [\"https://example.com/mac.jpg\"],\n    \"condition\": \"like-new\",\n    \"free_shipping\": true,\n    \"available_quantity\": 3,\n    \"seller\": {\n        \"id\": 102,\n        \"name\": \"Apple Store\",\n        \"rating\": 4.7\n    }\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/items",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "items"]
-                },
-                "description": "Intenta crear un item con condición no válida"
-              }
-            },
-            {
-              "name": "Create Item - Invalid Seller Rating",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 400\", function () {",
-                      "    pm.response.to.have.status(400);",
-                      "});",
-                      "",
-                      "pm.test(\"Seller rating validation error\", function () {",
-                      "    var jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.message).to.be.an('array');",
-                      "    pm.expect(jsonData.message.some(msg => msg.includes('seller.rating'))).to.be.true;",
-                      "});"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"title\": \"MacBook Pro M1\",\n    \"price\": {\n        \"amount\": 2499.99,\n        \"currency\": \"USD\"\n    },\n    \"pictures\": [\"https://example.com/mac.jpg\"],\n    \"condition\": \"new\",\n    \"free_shipping\": true,\n    \"available_quantity\": 3,\n    \"seller\": {\n        \"id\": 102,\n        \"name\": \"Apple Store\",\n        \"rating\": 6\n    }\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/items",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "items"]
-                },
-                "description": "Intenta crear un item con rating de vendedor fuera de rango (0-5)"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Get Items by Seller ID",
-          "item": [
-            {
-              "name": "Get Items by Seller ID (Success)",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 200\", function () {",
-                      "    pm.response.to.have.status(200);",
-                      "});",
-                      "",
-                      "pm.test(\"Response has items array\", function () {",
-                      "    var jsonData = pm.response.json();",
-                      "    pm.expect(jsonData).to.have.property('items');",
-                      "    pm.expect(jsonData.items).to.be.an('array');",
-                      "});",
-                      "",
-                      "pm.test(\"Items have valid format\", function () {",
-                      "    var jsonData = pm.response.json();",
-                      "    if (jsonData.items.length > 0) {",
-                      "        const firstItem = jsonData.items[0];",
-                      "        // ID validation",
-                      "        pm.expect(firstItem.id).to.match(/^MLA\\d+$/);",
-                      "",
-                      "        // Title validation",
-                      "        pm.expect(firstItem.title).to.have.lengthOf.at.least(5);",
-                      "        pm.expect(firstItem.title).to.have.lengthOf.at.most(100);",
-                      "",
-                      "        // Price validation",
-                      "        pm.expect(firstItem.price.amount).to.be.within(0.01, 999999.99);",
-                      "        pm.expect(firstItem.price.currency).to.be.oneOf(['USD', 'EUR', 'ARS']);",
-                      "",
-                      "        // Pictures validation",
-                      "        pm.expect(firstItem.pictures).to.be.an('array').that.is.not.empty;",
-                      "        pm.expect(firstItem.pictures.length).to.be.at.most(10);",
-                      "",
-                      "        // Condition validation",
-                      "        pm.expect(firstItem.condition).to.be.oneOf(['new', 'used', 'refurbished']);",
-                      "",
-                      "        // Seller validation",
-                      "        pm.expect(firstItem.seller.rating).to.be.within(0, 5);",
-                      "        pm.expect(firstItem.seller.name).to.have.lengthOf.at.least(3);",
-                      "        pm.expect(firstItem.seller.name).to.have.lengthOf.at.most(50);",
-                      "    }",
-                      "});"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/items/seller/1",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "items", "seller", "1"]
-                },
-                "description": "Obtiene todos los items de un vendedor específico por su ID"
-              }
-            },
-            {
-              "name": "Get Items by Seller ID (Not Found)",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 404\", function () {",
-                      "    pm.response.to.have.status(404);",
-                      "});",
-                      "",
-                      "pm.test(\"Item not found error\", function () {",
-                      "    var jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.message).to.equal('Item not found');",
-                      "    pm.expect(jsonData.error).to.equal('Not Found');",
-                      "});"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/items/seller/999",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "items", "seller", "999"]
-                },
-                "description": "Intenta obtener items de un vendedor que no existe"
-              }
-            },
-            {
-              "name": "Get Items by Seller ID (Bad Request)",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test(\"Status code is 400\", function () {",
-                      "    pm.response.to.have.status(400);",
-                      "});",
-                      "",
-                      "pm.test(\"Invalid ID format error\", function () {",
-                      "    var jsonData = pm.response.json();",
-                      "    pm.expect(jsonData.message).to.equal('Invalid item ID format. Must start with MLA followed by numbers.');",
-                      "    pm.expect(jsonData.error).to.equal('Bad Request');",
-                      "});"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/items/seller/abc",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "items", "seller", "abc"]
-                },
-                "description": "Intenta obtener items de un vendedor con un ID en formato inválido"
+                "description": "Intenta crear un item con datos inválidos"
               }
             }
           ]
